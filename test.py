@@ -5,6 +5,7 @@ import json
 
 from datetime import datetime
 from binance.client import Client
+from pushover import init, Client as pushoverClient
 
 
 def date_to_milliseconds(date_str):
@@ -137,28 +138,13 @@ def get_historical_klines(symbol, interval, start_str, end_str=None):
 def getGrowthRate(high, low):
     return format(((float(high) - float(low)) / float(low)) * 100, "2f")
 
-f = open("currencies.text")
+currencyFile = open("tempCurrencies.txt")
 
 def getNextCurrency():
-    return f.readline()[:-1]
+    return currencyFile.readline()[:-1]
 
-"""
-KLINE_INTERVAL_1MINUTE = '1m'
-KLINE_INTERVAL_2MINUTE = '3m'
-KLINE_INTERVAL_5MINUTE = '5m'
-KLINE_INTERVAL_15MINUTE = '15m'
-KLINE_INTERVAL_30MINUTE = '30m'
-KLINE_INTERVAL_1HOUR = '1h'
-KLINE_INTERVAL_2HOUR = '2h'
-KLINE_INTERVAL_4HOUR = '4h'
-KLINE_INTERVAL_6HOUR = '6h'
-KLINE_INTERVAL_8HOUR = '8h'
-KLINE_INTERVAL_12HOUR = '12h'
-KLINE_INTERVAL_1DAY = '1d'
-KLINE_INTERVAL_3DAY = '3d'
-KLINE_INTERVAL_1WEEK = '1w'
-KLINE_INTERVAL_1MONTH = '1M'
-"""
+def isCurrencyTrending(klines, threshold):
+    return float(klines[len(klines)-1][9]) > threshold
 
 """
 [
@@ -179,24 +165,34 @@ KLINE_INTERVAL_1MONTH = '1M'
 ]
 """
 
-flag = True
-while flag:
-    symbol = getNextCurrency() + "BTC"
-    # flag = False
+init(PUSHOVER_API_TOKEN)
+doRunContinue = True
+doSendPushover = True
+baseCurrency = "ETH"
+while doRunContinue:
+    symbol = getNextCurrency() + baseCurrency
+    # doRunContinue = False
     # symbol = "BCDBTC"
-    if(symbol == None or symbol == ""):
-        break
+    if(symbol == None or symbol == baseCurrency):
+        currencyFile.seek(0)
+        continue
 
-    start = "10 minutes ago JST"
+    start = "5 minutes ago JST"
     interval = Client.KLINE_INTERVAL_1MINUTE
 
     klines = get_historical_klines(symbol, interval, start)
 
     growth = getGrowthRate(klines[len(klines)-1][2], klines[0][3])
-    volume = int(klines[len(klines)-1][5].split(".")[0])
+    totalVolume = int(klines[len(klines)-1][5].split(".")[0])
+    lastTredingVolume = klines[len(klines)-1][9]
+    # if(isCurrencyTrending(klines, 500)):
+    #     print(symbol[:-3])
 
-    if (float(growth) < 1) and int(volume) > 499 :
-        print(symbol[:-3] + "    " + str(growth) + "             " +  str(volume) + "             " + str(klines[len(klines)-1][8]) + "       " + str(klines[len(klines)-1][9].split(".")[0]))
+    if (float(growth) > 0.001) and int(totalVolume) > 499 and float(lastTredingVolume) > 0:
+        print(symbol[:-3] + "    " + str(growth) + "             " + str(lastTredingVolume.split(".")[0]))
+
+        if doSendPushover and (float(growth) > 1.75):
+            pushoverClient(PUSHOVER_USER_KEY).send_message(str(growth), title=symbol[:-3])
     # for i in klines:
     #     x = dateparser.parse(str(i[0]))
     #     print(str(x))
