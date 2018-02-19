@@ -7,17 +7,8 @@ from datetime import datetime
 from binance.client import Client
 from pushover import init, Client as pushoverClient
 
-
 def date_to_milliseconds(date_str):
-    """Convert UTC date to milliseconds
 
-    If using offset strings add "UTC" to date string e.g. "now UTC", "11 hours ago UTC"
-
-    See dateparse docs for formats http://dateparser.readthedocs.io/en/latest/
-
-    :param date_str: date in readable format, i.e. "January 01, 2018", "11 hours ago UTC", "now UTC"
-    :type date_str: str
-    """
     # get epoch value in UTC
     epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
     # parse our date string
@@ -59,24 +50,7 @@ def interval_to_milliseconds(interval):
 
 
 def get_historical_klines(symbol, interval, start_str, end_str=None):
-    """Get Historical Klines from Binance
 
-    See dateparse docs for valid start and end string formats http://dateparser.readthedocs.io/en/latest/
-
-    If using offset strings for dates add "UTC" to date string e.g. "now UTC", "11 hours ago UTC"
-
-    :param symbol: Name of symbol pair e.g BNBBTC
-    :type symbol: str
-    :param interval: Biannce Kline interval
-    :type interval: str
-    :param start_str: Start date string in UTC format
-    :type start_str: str
-    :param end_str: optional - end date string in UTC format
-    :type end_str: str
-
-    :return: list of OHLCV values
-
-    """
     # create the Binance client, no need for api key
     client = Client("", "")
 
