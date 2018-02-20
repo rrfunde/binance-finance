@@ -2,10 +2,12 @@ import time
 import dateparser
 import pytz
 import json
+import os
 
 from datetime import datetime
 from binance.client import Client
 from pushover import init, Client as pushoverClient
+
 
 def date_to_milliseconds(date_str):
 
@@ -120,6 +122,11 @@ def getNextCurrency():
 def isCurrencyTrending(klines, threshold):
     return float(klines[len(klines)-1][9]) > threshold
 
+def notify(title, text):
+    os.system("""
+              osascript -e 'display notification "{}" with title "{}"'
+              """.format(text, title))
+
 """
 [
     [
@@ -141,7 +148,8 @@ def isCurrencyTrending(klines, threshold):
 
 init(PUSHOVER_API_TOKEN)
 doRunContinue = True
-doSendPushover = True
+doSendPushover = False
+doSendMacNotification = True
 baseCurrency = "ETH"
 while doRunContinue:
     symbol = getNextCurrency() + baseCurrency
@@ -167,6 +175,9 @@ while doRunContinue:
 
         if doSendPushover and (float(growth) > 1.75):
             pushoverClient(PUSHOVER_USER_KEY).send_message(str(growth), title=symbol[:-3])
+        elif doSendMacNotification and (float(growth) > 1.75):
+            notify(str(growth), symbol[:-3])
+
     # for i in klines:
     #     x = dateparser.parse(str(i[0]))
     #     print(str(x))
