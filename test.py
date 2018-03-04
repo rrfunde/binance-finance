@@ -3,6 +3,7 @@ import dateparser
 import pytz
 import json
 import os
+import time
 
 from datetime import datetime
 from binance.client import Client
@@ -114,7 +115,7 @@ def get_historical_klines(symbol, interval, start_str, end_str=None):
 def getGrowthRate(high, low):
     return format(((float(high) - float(low)) / float(low)) * 100, "2f")
 
-currencyFile = open("tempCurrencies.txt")
+currencyFile = open("trending.txt")
 
 def getNextCurrency():
     return currencyFile.readline()[:-1]
@@ -150,16 +151,20 @@ init(PUSHOVER_API_TOKEN)
 doRunContinue = True
 doSendPushover = False
 doSendMacNotification = True
-baseCurrency = "ETH"
+baseCurrency = "BTC"
+printResult = True
+
 while doRunContinue:
     symbol = getNextCurrency() + baseCurrency
-    # doRunContinue = False
     # symbol = "BCDBTC"
     if(symbol == None or symbol == baseCurrency):
+        doRunContinue = False
         currencyFile.seek(0)
+        print("**************************")
+        time.sleep(1*10)
         continue
 
-    start = "5 minutes ago JST"
+    start = "3 minutes ago JST"
     interval = Client.KLINE_INTERVAL_1MINUTE
 
     klines = get_historical_klines(symbol, interval, start)
@@ -170,14 +175,13 @@ while doRunContinue:
     # if(isCurrencyTrending(klines, 500)):
     #     print(symbol[:-3])
 
-    if (float(growth) > 0.001) and int(totalVolume) > 499 and float(lastTredingVolume) > 0:
+    if (float(growth) > 0.0001) and int(totalVolume) > 499 and float(lastTredingVolume) > 0 and printResult:
         print(symbol[:-3] + "    " + str(growth) + "             " + str(lastTredingVolume.split(".")[0]))
 
-        if doSendPushover and (float(growth) > 1.75):
+        if doSendPushover and (float(growth) > 1.0):
             pushoverClient(PUSHOVER_USER_KEY).send_message(str(growth), title=symbol[:-3])
-        elif doSendMacNotification and (float(growth) > 1.75):
-            notify(str(growth), symbol[:-3])
-
+        elif doSendMacNotification and (float(growth) > 1.0):
+            notify(str(growth), symbol[:-3] + " " + str(lastTredingVolume.split(".")[0]))
     # for i in klines:
     #     x = dateparser.parse(str(i[0]))
     #     print(str(x))
